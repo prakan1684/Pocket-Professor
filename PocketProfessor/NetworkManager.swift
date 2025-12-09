@@ -10,129 +10,31 @@ struct FeedbackPayload: Decodable {
     let encouragement: String
 }
 
-enum AnnotationType: String, Decodable {
-    case circle
-    case rect
-    case arrow
-    case text
+struct HighlightAnnotation: Decodable {
+    let type: String
+    let topLeft: NormalizedPoint
+    let width: Float
+    let height: Float
+    let colorHex: String
+    let opacity: Float
+    
 }
+
 
 struct NormalizedPoint: Decodable {
     let x: CGFloat
     let y: CGFloat
 }
 
-struct Annotation: Decodable, Identifiable {
-    let id: UUID
-    let type: AnnotationType
-    let center: NormalizedPoint?
-    let radius: CGFloat?
-    let origin: NormalizedPoint?
-    let size: NormalizedPoint?
-    let start: NormalizedPoint?
-    let end: NormalizedPoint?
-    let colorHex: String?
-    let lineWidth: CGFloat?
-    // Text-specific
-    let text: String?
-    let textSize: CGFloat?
 
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
 
-        // Decode straightforward values or collect into locals first
-        let decodedId = (try? c.decode(UUID.self, forKey: .id)) ?? UUID()
-        let decodedType = try c.decode(AnnotationType.self, forKey: .type)
-        let decodedColorHex = try? c.decode(String.self, forKey: .colorHex)
-        let decodedLineWidth = try? c.decode(CGFloat.self, forKey: .lineWidth)
-        let decodedText = try? c.decode(String.self, forKey: .text)
-
-        // textSize may come from fontSize or textSize
-        var textSizeValue: CGFloat?
-        if let fs = try? c.decode(CGFloat.self, forKey: .fontSize) {
-            textSizeValue = fs
-        } else {
-            textSizeValue = try? c.decode(CGFloat.self, forKey: .textSize)
-        }
-
-        // Center may come from .center or .position (alias for text)
-        var centerValue: NormalizedPoint? = try? c.decode(NormalizedPoint.self, forKey: .center)
-        if centerValue == nil, let pos = try? c.decode(NormalizedPoint.self, forKey: .position) {
-            centerValue = pos
-        }
-
-        // Radius
-        let radiusValue: CGFloat? = try? c.decode(CGFloat.self, forKey: .radius)
-
-        // Rect origin may be .origin or .topLeft
-        var originValue: NormalizedPoint? = try? c.decode(NormalizedPoint.self, forKey: .origin)
-        if originValue == nil {
-            originValue = try? c.decode(NormalizedPoint.self, forKey: .topLeft)
-        }
-
-        // Rect size may be .size or width/height pair
-        var sizeValue: NormalizedPoint?
-        if let width = try? c.decode(CGFloat.self, forKey: .width),
-           let height = try? c.decode(CGFloat.self, forKey: .height) {
-            sizeValue = NormalizedPoint(x: width, y: height)
-        } else {
-            sizeValue = try? c.decode(NormalizedPoint.self, forKey: .size)
-        }
-
-        // Arrow start/end may be .start/.end or .from/.to
-        var startValue: NormalizedPoint? = try? c.decode(NormalizedPoint.self, forKey: .start)
-        if startValue == nil {
-            startValue = try? c.decode(NormalizedPoint.self, forKey: .from)
-        }
-        var endValue: NormalizedPoint? = try? c.decode(NormalizedPoint.self, forKey: .end)
-        if endValue == nil {
-            endValue = try? c.decode(NormalizedPoint.self, forKey: .to)
-        }
-
-        // Finally assign to let properties exactly once
-        id = decodedId
-        type = decodedType
-        colorHex = decodedColorHex
-        lineWidth = decodedLineWidth
-        text = decodedText
-        textSize = textSizeValue
-        center = centerValue
-        radius = radiusValue
-        origin = originValue
-        size = sizeValue
-        start = startValue
-        end = endValue
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case type
-        case center
-        case radius
-        case origin
-        case size
-        case start
-        case end
-        case colorHex
-        case lineWidth
-        case text
-        case textSize
-        case fontSize // backend alias for textSize
-        case topLeft  // backend alias for origin
-        case width    // backend width for rect
-        case height   // backend height for rect
-        case from     // backend alias for start
-        case to       // backend alias for end
-        case position // backend alias for center (text)
-    }
-}
 
 struct AnalyzeResult: Decodable {
     let status: String
     let problem_type: String?
     let context: String?
     let feedback: FeedbackPayload?
-    let annotations: [Annotation]?
+    let annotations: [HighlightAnnotation]?
     let annotation_status: String?
     let annotation_error: String?
     let annotation_metadata: [String: String]?
