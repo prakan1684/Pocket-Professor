@@ -1,5 +1,8 @@
 import Foundation
 import CoreGraphics
+import os
+
+private let networkLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.yourapp", category: "Network")
 
 struct FeedbackPayload: Decodable {
     let problem: String
@@ -93,13 +96,12 @@ final class CanvasNetworkManager {
             throw NetworkError.badStatus((response as? HTTPURLResponse)?.statusCode ?? -1)
         }
         
-        #if DEBUG
+        
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("[AnalyzeCanvas] Raw response:\n\(jsonString)")
+            networkLogger.debug("[AnalyzeCanvas] Raw response (UTF-8): \(jsonString, privacy: .public)")
         } else {
-            print("[AnalyzeCanvas] Received non-UTF8 data with length: \(data.count)")
+            networkLogger.info("[AnalyzeCanvas] Received non-UTF8 data with length: \(data.count, privacy: .public)")
         }
-        #endif
 
         let decoded = try JSONDecoder().decode(AnalyzeResult.self, from: data)
         return decoded
